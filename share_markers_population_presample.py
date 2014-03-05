@@ -29,7 +29,6 @@ def share(pair):
     return retval
     
 def shares(inds):
-    print ';call to shares'
     ninds = len(inds)
     tmaxshares = 0.5 * ninds * (ninds - 1)
 
@@ -50,12 +49,12 @@ with open(sys.argv[2]) as f:
     map = [x.strip().split() for x in f]
     positions = [int(x[3]) for x in map]
     nmark = len(positions)
-print ';reading shares'
+print 'reading shares'
 with open(sys.argv[1]) as sharef:
     shared = {}
     for i,line in enumerate(sharef):
         if i % 100000 == 0:
-            print ';reading line %s' % i
+            print 'reading line %s' % i
         l = line.strip().split()
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
@@ -65,18 +64,18 @@ with open(sys.argv[1]) as sharef:
         if pair not in shared:
             shared[pair] = []
         shared[pair].append([start, stop])
-    print ';sorting'
+    print 'sorting'
     for k in shared:
         shared[k] = sorted(shared[k])
     keyset = frozenset(shared.keys())
 
-print ';calc affectedshares'
+print 'calc affectedshares'
 affshare = shares(affinds)
 
-print ';calc nullshares'
+print 'calc nullshares'
 
 def nsharehelper(x):
-    print ';sharecall %s' % x 
+    print 'sharecall %s' % x 
     return shares(sample(fullinds, naff))
 
 pool = Pool(processes=nthreads)
@@ -86,7 +85,7 @@ nullshares = zip(*nullshares)
 
 
 
-print ';calc pvals'
+print 'calc pvals'
 pvals = [sum(1 for ns in n if ns >= a) / float(nrep)
          for a,n in izip(affshare, nullshares)]
 
