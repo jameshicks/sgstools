@@ -4,16 +4,12 @@
 import sys
 from itertools import combinations, izip
 from random import sample
-
+from multiprocessing import Pool
 
 import numpy as np 
 
-nrep=100
-
-#def pair_shares(pair,position):
-#    for x,y in shared[pair]:
-#        if x <= position <= y: return True
-#    return False
+nrep=1000
+nthreads=10
 
 
 def share(pair):
@@ -73,12 +69,24 @@ with open(sys.argv[1]) as sharef:
     for k in shared:
         shared[k] = sorted(shared[k])
     keyset = frozenset(shared.keys())
+
 print ';calc affectedshares'
 affshare = shares(affinds)
+
 print ';calc nullshares'
-nullshares = zip(*[shares(sample(fullinds, naff)) for i in xrange(nrep)])
+
+def nsharehelper(x):
+    print ';sharecall %s' % x 
+    return shares(sample(fullinds, naff))
+
+pool = Pool(processes=nthreads)
+
+nullshares = pool.map(nsharehelper, xrange(nrep))
+nullshares = zip(*nullshares)
+
+
+
 print ';calc pvals'
-#import pdb; pdb.set_trace()
 pvals = [sum(1 for ns in n if ns >= a) / float(nrep)
          for a,n in izip(affshare, nullshares)]
 
