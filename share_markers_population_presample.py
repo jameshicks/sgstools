@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Usage: <script> sharefile mapfile affectedlist fullinds 
+# Usage: <script> sharefile mapfile affectedlist fullinds outfile
 import sys
 from itertools import combinations, izip
 from random import sample
@@ -90,6 +90,10 @@ print ';calc pvals'
 pvals = [sum(1 for ns in n if ns >= a) / float(nrep)
          for a,n in izip(affshare, nullshares)]
 
-for m,a,p in izip(map, affshare, pvals):
-    chr,snp,cm,pos = m
-    print ','.join(str(x) for x in [chr,snp,cm,pos,a,p])
+
+with open(sys.argv[5],'w') as f:
+    
+    for m,a,p in izip(map, affshare, pvals):
+        chr,snp,cm,pos = m
+        f.write(','.join(str(x) for x in [chr,snp,cm,pos,a,p]))
+        f.write('\n')
