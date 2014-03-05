@@ -16,21 +16,18 @@ nrep=100
 #    return False
 
 
-#def pct_shares(inds, pos, tmaxshares):
-#    does_share = [pair_shares(frozenset(x), pos) for x in combinations(inds,2) if x in shared]
-#    sharecounts = sum(1 for x in does_share if x)
-#    return sharecounts / tmaxshares
-
 def share(pair):
     retval = np.zeros(nmark)
-    shares = shared[pair][:]
-    start, stop = shares.pop(0)
+    shares = shared[pair]
+    lshares = len(shares)
+    sidx = 0
+    start, stop = shares[sidx]
     for i,p in enumerate(positions):
         if p > stop:
-            try:
-                start, stop = shares.pop(0)
-            except IndexError:
+            sidx += 1
+            if (sidx + 1) > lshares:
                 break
+            start, stop = shares[sidx]
         if start <= p <= stop:
             retval[i] = 1
     return retval
