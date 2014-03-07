@@ -45,8 +45,8 @@ with open(sys.argv[4]) as f:
 
 print 'Reading map'
 with open(sys.argv[2]) as f:
-    map = [x.strip().split() for x in f]
-    positions = [int(x[3]) for x in map]
+    gmap = [x.strip().split() for x in f]
+    positions = [int(x[3]) for x in gmap]
     nmark = len(positions)
     posd =  dict([(y,x) for x,y in enumerate(positions)])
 
@@ -94,7 +94,7 @@ print
 print 'Writing output'
 with open(sys.argv[5],'w') as f:
     f.write(','.join(['chr','snp','cm','pos','pctshares', 'p%s' % nrep]) + '\n')
-    for m,a,p in izip(map, affshare, pvals):
+    for m,a,p in izip(gmap, affshare, pvals):
         chr,snp,cm,pos = m
         f.write(','.join(str(x) for x in [chr,snp,cm,pos,a,p]))
         f.write('\n')
