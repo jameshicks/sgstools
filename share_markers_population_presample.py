@@ -30,6 +30,8 @@ def shares(inds):
     validpairs = {frozenset(x) for x in combinations(inds, 2)} & keyset
     return sum(share(pair) for pair in validpairs) / tmaxshares
 
+def empirical_p(observed, nullvalues):
+    return nullvalues[nullvalues >= observed].shape[0] / float(nullvalues.shape[0])
 
 print 'Reading individual lists'
 with open(sys.argv[3]) as f:
@@ -77,13 +79,11 @@ if parallel:
 else:
     nullshares = map(nsharehelper, xrange(nrep))
 
-nullshares = zip(*nullshares)
-
-
+nullshares = np.array(nullshares).T
 
 print 'Calculating Empirical P-values'
-pvals = [sum(1 for ns in n if ns >= a) / float(nrep)
-         for a,n in izip(affshare, nullshares)]
+pvals = np.array([empirical_p(observed, nulls)
+                  for observed,nulls in izip(affshare, nullshares)])
 
 print 'Minimum observed P: %s' % min(pvals)
 print
