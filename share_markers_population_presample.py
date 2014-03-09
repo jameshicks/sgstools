@@ -19,9 +19,7 @@ def share(pair):
     shares = shared[pair]
 
     for start, stop in shares:
-        a,b = posd[start],posd[stop]
-        retval[a:(b+1)] = 1 
-
+        retval[start:(stop+1)] = 1
     return retval
 
 
@@ -60,7 +58,7 @@ with open(sys.argv[1]) as sharef:
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
         pair = frozenset([ind1,ind2])
-        start,stop = [int(x) for x in l[5:7]]
+        start,stop = [posd[int(x)] for x in l[5:7]]
         if pair not in shared:
             shared[pair] = []
         shared[pair].append([start, stop])
