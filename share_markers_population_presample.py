@@ -8,15 +8,18 @@ from multiprocessing import Pool
 
 import numpy as np 
 
-nrep = 1000
+nrep = 10000
 
 parallel = True
 nthreads = 8
 
+# Unsigned 16 bit integer
+datatype = 'u4'
+
 def shares(inds):
     ninds = len(inds)
-    tmaxshares = 0.5 * ninds * (ninds - 1)
-    s = np.zeros(nmark)
+    tmaxshares = numpairs(ninds)
+    s = np.zeros(nmark, dtype=datatype)
     validpairs = {frozenset(x) for x in combinations(inds, 2)} & keyset
     for pair in validpairs:
         for start, stop in shared[pair]:
@@ -25,6 +28,9 @@ def shares(inds):
 
 def empirical_p(observed, nullvalues):
     return nullvalues[nullvalues >= observed].shape[0] / float(nullvalues.shape[0])
+
+def numpairs(n):
+    return n * (n-1) * 0.5
 
 print 'Reading individual lists'
 with open(sys.argv[3]) as f:
@@ -56,6 +62,12 @@ with open(sys.argv[1]) as sharef:
         shared[pair].append([start, stop])
     keyset = frozenset(shared.keys())
 
+if numpairs(naff) > np.iinfo(datatype).max:
+    print 'More affected pairs than can fit into datatype %s' % datatype
+    print 'Number of affected pairs: %s' % numpairs(naff)
+    print 'Max possible with datatype %s: %s' % (datatype,
+                                                 np.iinfo(datatype).max)
+    exit(1)
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds)
 
