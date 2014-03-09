@@ -13,8 +13,6 @@ nrep = 10000
 parallel = True
 nthreads = 8
 
-# Unsigned 16 bit integer
-datatype = 'u4'
 
 def shares(inds):
     ninds = len(inds)
@@ -62,12 +60,18 @@ with open(sys.argv[1]) as sharef:
         shared[pair].append([start, stop])
     keyset = frozenset(shared.keys())
 
-if numpairs(naff) > np.iinfo(datatype).max:
+for dtype in ['u1','u2','u4','u8']:
+    datatype = dtype
+    if numpairs(naff) < np.iinfo(datatype).max:
+        break
+else:
     print 'More affected pairs than can fit into datatype %s' % datatype
     print 'Number of affected pairs: %s' % numpairs(naff)
     print 'Max possible with datatype %s: %s' % (datatype,
                                                  np.iinfo(datatype).max)
     exit(1)
+
+print 'datatype selected: %s (max %s)' % (datatype, np.iinfo(datatype).max)
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds)
 
