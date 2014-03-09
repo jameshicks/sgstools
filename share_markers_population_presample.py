@@ -13,22 +13,15 @@ nrep = 1000
 parallel = True
 nthreads = 8
 
-
-def share(pair):
-    retval = np.zeros(nmark)
-    shares = shared[pair]
-
-    for start, stop in shares:
-        retval[start:(stop+1)] = 1
-    return retval
-
-
 def shares(inds):
     ninds = len(inds)
     tmaxshares = 0.5 * ninds * (ninds - 1)
-
+    s = np.zeros(nmark)
     validpairs = {frozenset(x) for x in combinations(inds, 2)} & keyset
-    return sum(share(pair) for pair in validpairs) / tmaxshares
+    for pair in validpairs:
+        for start, stop in shared[pair]:
+            s[start:(stop+1)] += 1
+    return s / tmaxshares
 
 def empirical_p(observed, nullvalues):
     return nullvalues[nullvalues >= observed].shape[0] / float(nullvalues.shape[0])
