@@ -75,7 +75,8 @@ affshare = shares(affinds)
 print 'Calculating sharing from %s draws of %s individuals' % (nrep, naff)
 
 def nsharehelper(x):
-    print 'sharecall %s' % x 
+    if x % 1000 == 0:
+        print 'Random draw %s' % x 
     return shares(sample(fullinds, naff))
 
 if parallel:
