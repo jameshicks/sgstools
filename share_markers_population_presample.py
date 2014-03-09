@@ -27,12 +27,9 @@ def shares(inds):
     ninds = len(inds)
     tmaxshares = 0.5 * ninds * (ninds - 1)
 
-    nshare = np.zeros(nmark)
     validpairs = {frozenset(x) for x in combinations(inds, 2)} & keyset
-    for pair in validpairs:
-        pair = frozenset(pair)
-        nshare += share(pair)
-    return nshare / tmaxshares
+    return sum(share(pair) for pair in validpairs) / tmaxshares
+
 
 print 'Reading individual lists'
 with open(sys.argv[3]) as f:
@@ -69,6 +66,7 @@ affshare = shares(affinds)
 
 
 print 'Calculating sharing from %s draws of %s individuals' % (nrep, naff)
+
 def nsharehelper(x):
     print 'sharecall %s' % x 
     return shares(sample(fullinds, naff))
