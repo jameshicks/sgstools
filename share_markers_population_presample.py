@@ -2,7 +2,7 @@
 
 # Usage: <script> sharefile mapfile affectedlist fullinds outfile
 import sys
-from itertools import combinations, izip
+from itertools import combinations, izip, imap
 from random import sample
 from multiprocessing import Pool
 
@@ -71,12 +71,11 @@ else:
                                                  np.iinfo(datatype).max)
     exit(1)
 
-print 'datatype selected: %s (max %s)' % (datatype, np.iinfo(datatype).max)
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds)
 
 
-print 'Calculating sharing from %s draws of %s individuals' % (nrep, naff)
+print 'Calculating emperical p-values from %s draws of %s individuals' % (nrep, naff)
 
 def nsharehelper(x):
     if x % 1000 == 0:
@@ -85,15 +84,11 @@ def nsharehelper(x):
 
 if parallel:
     pool = Pool(processes=nthreads)
-    nullshares = pool.map(nsharehelper, xrange(nrep))
+    nullshares = pool.imap_unordered(nsharehelper, xrange(nrep), chunksize=250)
 else:
-    nullshares = map(nsharehelper, xrange(nrep))
+    nullshares = imap(nsharehelper, xrange(nrep))
 
-nullshares = np.array(nullshares).T
-
-print 'Calculating Empirical P-values'
-pvals = np.array([empirical_p(observed, nulls)
-                  for observed,nulls in izip(affshare, nullshares)])
+pvals = sum(n > affshare for n in nullshares) / float(nrep)
 
 print 'Minimum observed P: %s' % min(pvals)
 print
