@@ -88,7 +88,7 @@ if parallel:
 else:
     nullshares = imap(nsharehelper, xrange(nrep))
 
-pvals = sum(n > affshare for n in nullshares) / float(nrep)
+pvals = sum(n >= affshare for n in nullshares) / float(nrep)
 
 print 'Minimum observed P: %s' % min(pvals)
 print
