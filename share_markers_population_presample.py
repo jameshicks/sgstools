@@ -24,9 +24,6 @@ def shares(inds):
             s[start:(stop+1)] += 1
     return s / tmaxshares
 
-def empirical_p(observed, nullvalues):
-    return nullvalues[nullvalues >= observed].shape[0] / float(nullvalues.shape[0])
-
 def numpairs(n):
     return n * (n-1) * 0.5
 
