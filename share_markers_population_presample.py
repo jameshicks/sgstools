@@ -13,6 +13,8 @@ nrep = 10000
 parallel = True
 nthreads = 8
 
+markerdensitylimit = 100 / float(10**6)
+minsegmentlength = .5 * 10**6
 
 def shares(inds):
     ninds = len(inds)
@@ -28,6 +30,9 @@ def shares(inds):
 
 def numpairs(n):
     return n * (n-1) * 0.5
+
+print 'Minimum segment length: %sMb' % (minsegmentlength / float(10**6))
+print 'Minimum marker density: %s markers/Mb' % (markerdensitylimit *  float(10**6))
 
 print 'Reading individual lists'
 with open(sys.argv[3]) as f:
@@ -52,11 +57,20 @@ with open(sys.argv[1]) as sharef:
         l = line.strip().split()
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
+        markersinshare = int(l[9])
         pair = frozenset([ind1,ind2])
-        start,stop = [posd[int(x)] for x in l[5:7]]
+        start,stop = [int(x) for x in l[5:7]]
+        istart,istop = [posd[int(x)] for x in l[5:7]]
+
+        if (stop - start) < minsegmentlength:
+            continue
+
+        if (markersinshare / float(stop - start)) < markerdensitylimit:
+            continue
+        
         if pair not in shared:
             shared[pair] = []
-        shared[pair].append([start, stop])
+        shared[pair].append([istart, istop])
     keyset = frozenset(shared.keys())
 
 for dtype in ['u1','u2','u4','u8']:
