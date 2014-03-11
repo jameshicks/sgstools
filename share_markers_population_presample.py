@@ -107,7 +107,7 @@ print 'Minimum observed P: %s' % min(pvals)
 print
 print 'Writing output'
 with open(sys.argv[5],'w') as f:
-    f.write(','.join(['chr','snp','cm','pos','pctshares', 'p%s' % nrep]) + '\n')
+    f.write(','.join(['chr','snp','cm','pos','pctshares', 'p']) + '\n')
     for m,a,p in izip(gmap, affshare, pvals):
         chr,snp,cm,pos = m
         f.write(','.join(str(x) for x in [chr,snp,cm,pos,a,p]))
