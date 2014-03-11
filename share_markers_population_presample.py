@@ -18,10 +18,12 @@ def shares(inds):
     ninds = len(inds)
     tmaxshares = numpairs(ninds)
     s = np.zeros(nmark, dtype=datatype)
-    validpairs = {frozenset(x) for x in combinations(inds, 2)} & keyset
-    for pair in validpairs:
-        for start, stop in shared[pair]:
-            s[start:(stop+1)] += 1
+    for pair in combinations(inds,2):
+        try:
+            for start, stop in shared[frozenset(pair)]:
+                s[start:(stop+1)] += 1
+        except KeyError:
+            pass
     return s / tmaxshares
 
 def numpairs(n):
