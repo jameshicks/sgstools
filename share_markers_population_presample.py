@@ -8,9 +8,9 @@ from multiprocessing import Pool
 
 import numpy as np 
 
-nrep = 10000
+nrep = 100
 
-parallel = True
+parallel = False
 nthreads = 8
 
 markerdensitylimit = 100 / float(10**6)
@@ -47,6 +47,10 @@ with open(sys.argv[2]) as f:
     positions = [int(x[3]) for x in gmap]
     nmark = len(positions)
     posd =  dict([(y,x) for x,y in enumerate(positions)])
+
+if naff == 0:
+    print 'ERROR: No affected individuals!'
+    exit(1)
 
 print 'Reading Share file'
 with open(sys.argv[1]) as sharef:
@@ -106,6 +110,7 @@ pvals = sum(n >= affshare for n in nullshares) / float(nrep)
 print 'Minimum observed P: %s' % min(pvals)
 print
 print 'Writing output'
+
 with open(sys.argv[5],'w') as f:
     f.write(','.join(['chr','snp','cm','pos','pctshares', 'p']) + '\n')
     for m,a,p in izip(gmap, affshare, pvals):
