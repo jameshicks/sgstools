@@ -52,6 +52,11 @@ if naff == 0:
     print 'ERROR: No affected individuals!'
     exit(1)
 
+if affinds - fullinds:
+    print "Some individuals in the affected list weren't in the population list"
+    print "These individuals were removed"
+    affinds = affinds - fullinds
+
 print 'Reading Share file'
 with open(sys.argv[1]) as sharef:
     shared = {}
