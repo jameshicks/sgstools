@@ -49,8 +49,8 @@ def shares(inds):
 def numpairs(n):
     return n * (n-1) * 0.5
 
-print 'Minimum segment length: %sMb' % (minsegmentlength / float(10**6))
-print 'Minimum marker density: %s markers/Mb' % (markerdensitylimit *  float(10**6))
+print 'Minimum segment length: %sMb' % (args.minsegmentlength / float(10**6))
+print 'Minimum marker density: %s markers/Mb' % (args.markerdensitylimit *  float(10**6))
 
 print 'Reading individual lists'
 with open(args.afffile) as f:
@@ -128,7 +128,7 @@ if args.njobs:
 else:
     nullshares = imap(nsharehelper, xrange(args.nrep))
 
-pvals = sum(n >= affshare for n in nullshares) / float(nrep)
+pvals = sum(n >= affshare for n in nullshares) / float(args.nrep)
 
 print 'Minimum observed P: %s' % min(pvals)
 print
