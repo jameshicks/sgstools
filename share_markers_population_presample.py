@@ -1,20 +1,38 @@
 #!/usr/bin/env python
 
-# Usage: <script> sharefile mapfile affectedlist fullinds outfile
-import sys
+import argparse
+
 from itertools import combinations, izip, imap
 from random import sample
 from multiprocessing import Pool
 
 import numpy as np 
 
-nrep = 100
 
-parallel = False
-nthreads = 8
-
-markerdensitylimit = 100 / float(10**6)
-minsegmentlength = .5 * 10**6
+parser = argparse.ArgumentParser()
+parser.add_argument('--match', metavar='FILE', required=True, dest='matchfile',
+                    help='GERMLINE match file')
+parser.add_argument('--map', metavar='FILE', required=True, dest='mapfile',
+                    help='PLINK format map file')
+parser.add_argument('-o', '--out', metavar='FILE', required=True, dest='outfile',
+                    help='Output file')
+parser.add_argument('--affecteds', metavar='FILE', required=True, dest='afffile',
+                    help='File with list of affecteds')
+parser.add_argument('--population', metavar='FILE', required=True, dest='popfile',
+                    help='File with list of population individuals')
+parser.add_argument('-j','--nproc', metavar='n', default=1, action='store', type=int,
+                    help='Parallelize P value computation by spreading across'
+                    'n processes', dest='njobs')
+parser.add_argument('--nrep', default=10**5, type=int, metavar='n', dest='nrep',
+                    help='Number of replications for emperical p-values')
+parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
+                    dest='markerdensitylimit', type=float,
+                    help='Minimum number of markers per basepair to include'
+                    'segment in analysis, default 100 markers/Mb')
+parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
+                    dest='minsegmentlength',
+                    help='Minimum size (in Mb) for segment to be included in analysis') 
+args = parser.parse_args()
 
 def shares(inds):
     ninds = len(inds)
@@ -35,14 +53,14 @@ print 'Minimum segment length: %sMb' % (minsegmentlength / float(10**6))
 print 'Minimum marker density: %s markers/Mb' % (markerdensitylimit *  float(10**6))
 
 print 'Reading individual lists'
-with open(sys.argv[3]) as f:
+with open(args.afffile) as f:
     affinds = set('.'.join(x.strip().split()) for x in f)
     naff = len(affinds)
-with open(sys.argv[4]) as f:
+with open(args.popfile) as f:
     fullinds = set('.'.join(x.strip().split()) for x in f)
 
 print 'Reading map'
-with open(sys.argv[2]) as f:
+with open(args.mapfile) as f:
     gmap = [x.strip().split() for x in f]
     positions = [int(x[3]) for x in gmap]
     nmark = len(positions)
@@ -58,7 +76,7 @@ if affinds - fullinds:
     affinds = affinds - fullinds
 
 print 'Reading Share file'
-with open(sys.argv[1]) as sharef:
+with open(args.matchfile) as sharef:
     shared = {}
     for i,line in enumerate(sharef):
         if i % 100000 == 0:
@@ -71,10 +89,10 @@ with open(sys.argv[1]) as sharef:
         start,stop = [int(x) for x in l[5:7]]
         istart,istop = [posd[int(x)] for x in l[5:7]]
 
-        if (stop - start) < minsegmentlength:
+        if (stop - start) < args.minsegmentlength:
             continue
 
-        if (markersinshare / float(stop - start)) < markerdensitylimit:
+        if (markersinshare / float(stop - start)) < args.markerdensitylimit:
             continue
         
         if pair not in shared:
@@ -97,18 +115,18 @@ print 'Calculating sharing from affecteds'
 affshare = shares(affinds)
 
 
-print 'Calculating emperical p-values from %s draws of %s individuals' % (nrep, naff)
+print 'Calculating emperical p-values from %s draws of %s individuals' % (args.nrep, naff)
 
 def nsharehelper(x):
     if x % 1000 == 0:
         print 'Random draw %s' % x 
     return shares(sample(fullinds, naff))
 
-if parallel:
-    pool = Pool(processes=nthreads)
-    nullshares = pool.imap_unordered(nsharehelper, xrange(nrep), chunksize=250)
+if args.njobs:
+    pool = Pool(processes=args.njobs)
+    nullshares = pool.imap_unordered(nsharehelper, xrange(args.nrep), chunksize=250)
 else:
-    nullshares = imap(nsharehelper, xrange(nrep))
+    nullshares = imap(nsharehelper, xrange(args.nrep))
 
 pvals = sum(n >= affshare for n in nullshares) / float(nrep)
 
@@ -116,7 +134,7 @@ print 'Minimum observed P: %s' % min(pvals)
 print
 print 'Writing output'
 
-with open(sys.argv[5],'w') as f:
+with open(args.outfile,'w') as f:
     f.write(','.join(['chr','snp','cm','pos','pctshares', 'p']) + '\n')
     for m,a,p in izip(gmap, affshare, pvals):
         chr,snp,cm,pos = m
