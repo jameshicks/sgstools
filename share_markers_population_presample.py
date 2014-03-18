@@ -122,13 +122,14 @@ affshare = shares(affinds, shared, nmark)
 
 
 print 'Calculating emperical p-values from %s draws of %s individuals' % (args.nrep, naff)
+print 'Using %s processes' % args.njobs
 
 def nsharehelper(x):
     if x % 1000 == 0:
         print 'Random draw %s' % x 
     return shares(sample(fullinds, naff), shared, nmark)
 
-if args.njobs:
+if args.njobs > 1:
     pool = Pool(processes=args.njobs)
     nullshares = pool.imap_unordered(nsharehelper, xrange(args.nrep), chunksize=500)
 else:
