@@ -34,7 +34,7 @@ parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l
                     help='Minimum size (in Mb) for segment to be included in analysis') 
 args = parser.parse_args()
 
-def shares(inds):
+def shares_py(inds, shared, nmark):
     ninds = len(inds)
     tmaxshares = numpairs(ninds)
     s = np.zeros(nmark, dtype=datatype)
@@ -46,6 +46,12 @@ def shares(inds):
             pass
     return s / tmaxshares
 
+try:
+    from pydigree.sgs import proportion_shares as shares
+except:
+    print "Could not find module 'pydigree', using slower pure python implementation"
+    shares = shares_py
+    
 def numpairs(n):
     return n * (n-1) * 0.5
 
@@ -97,7 +103,7 @@ with open(args.matchfile) as sharef:
         
         if pair not in shared:
             shared[pair] = []
-        shared[pair].append([istart, istop])
+        shared[pair].append((istart, istop))
     keyset = frozenset(shared.keys())
 
 for dtype in ['u1','u2','u4','u8']:
@@ -112,7 +118,7 @@ else:
     exit(1)
 
 print 'Calculating sharing from affecteds'
-affshare = shares(affinds)
+affshare = shares(affinds, shared, nmark)
 
 
 print 'Calculating emperical p-values from %s draws of %s individuals' % (args.nrep, naff)
@@ -120,11 +126,11 @@ print 'Calculating emperical p-values from %s draws of %s individuals' % (args.n
 def nsharehelper(x):
     if x % 1000 == 0:
         print 'Random draw %s' % x 
-    return shares(sample(fullinds, naff))
+    return shares(sample(fullinds, naff), shared, nmark)
 
 if args.njobs:
     pool = Pool(processes=args.njobs)
-    nullshares = pool.imap_unordered(nsharehelper, xrange(args.nrep), chunksize=250)
+    nullshares = pool.imap_unordered(nsharehelper, xrange(args.nrep), chunksize=500)
 else:
     nullshares = imap(nsharehelper, xrange(args.nrep))
 
