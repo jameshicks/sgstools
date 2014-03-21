@@ -34,8 +34,13 @@ parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l
                     help='Minimum size (in Mb) for segment to be included in analysis') 
 parser.add_argument('--seed', type=int, action='store', default=0,
                     help='Seed value for random number generator')
+parser.add_argument('--kinship', default=None, help='Optional kinship file for matching')
+parser.add_argument('--matchkinship', action='store_true', default=False,
+                    help = 'Match for mean kinship when drawing null population samples')
 args = parser.parse_args()
 
+
+# Python implementation of shares function if pydigree is not available
 def shares_py(inds, shared, nmark):
     ninds = len(inds)
     tmaxshares = numpairs(ninds)
@@ -53,12 +58,39 @@ try:
 except:
     print "Could not find module 'pydigree', using slower pure python implementation"
     shares = shares_py
-    
+
+
+### Kinship functions for matching
+
+def get_kinship(a,b):
+    try:
+        return kinship[frozenset({a,b})]
+    except KeyError:
+        return 0.0
+
+def mean_kinship(inds):
+    ninds  = len(inds)
+    return sum(get_kinship(a,b) for a,b in combinations(inds,2)) / (ninds * (ninds-1) * 0.5)
+
+def match_kinship_sample(affs, population, threshold=0.001):
+    ninds = len(affs)
+    ak = mean_kinship(affs)
+    for x in xrange(10000):
+        ns = random.sample(population, ninds)
+        if abs(mean_kinship(ns) - ak) < threshold:
+            return ns
+    else:
+        print 'ERROR: Took to many tries to match!'
+        exit(1)
+
 def numpairs(n):
     return n * (n-1) * 0.5
 
 if args.seed:
     random.seed(args.seed)
+if args.matchkinship  and not args.kinship:
+    print 'ERROR: No kinship file specified'
+    exit(1)
 
 print 'Minimum segment length: %sMb' % (args.minsegmentlength / float(10**6))
 print 'Minimum marker density: %s markers/Mb' % (args.markerdensitylimit *  float(10**6))
@@ -111,6 +143,20 @@ with open(args.matchfile) as sharef:
         shared[pair].append((istart, istop))
     keyset = frozenset(shared.keys())
 
+kinship = {}
+if args.kinship and args.matchkinship:
+    print 'Reading kinship'
+    with open(args.kinship) as kinshf:
+        for line in kinshf:
+            fam, ida, idb, phi = line.strip().split()
+            ida = (fam, ida)
+            idb = (fam, idb)
+            if not {ida, idb} <= fullinds:
+                continue
+            else:
+                kinship[frozenset({ida, ibd})] = float(phi)
+
+
 for dtype in ['u1','u2','u4','u8']:
     datatype = dtype
     if numpairs(naff) < np.iinfo(datatype).max:
@@ -132,7 +178,11 @@ print 'Using %s processes' % args.njobs
 def nsharehelper(x):
     if x % 1000 == 0:
         print 'Random draw %s' % x 
-    return shares(random.sample(fullinds, naff), shared, nmark)
+    if args.matchkinship:
+        ns = match_kinship_sample(affinds, fullinds, threshold=0.001)
+    else:
+        ns = random.sample(fullinds, naff)
+    return shares(ns, shared, nmark)
 
 if args.njobs > 1:
     pool = Pool(processes=args.njobs)
