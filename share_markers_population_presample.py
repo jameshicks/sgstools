@@ -32,7 +32,7 @@ parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
 parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
                     dest='minsegmentlength',
                     help='Minimum size (in Mb) for segment to be included in analysis') 
-parser.add_argument('--seed', type=int, action='store', default='None',
+parser.add_argument('--seed', type=int, action='store', default=0,
                     help='Seed value for random number generator')
 args = parser.parse_args()
 
@@ -84,7 +84,7 @@ if naff == 0:
 if affinds - fullinds:
     print "Some individuals in the affected list weren't in the population list"
     print "These individuals were removed"
-    affinds = affinds - fullinds
+    affinds = affinds & fullinds
 
 print 'Reading Share file'
 with open(args.matchfile) as sharef:
