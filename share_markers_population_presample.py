@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
+import random
 
 from itertools import combinations, izip, imap
-from random import sample
 from multiprocessing import Pool
 
 import numpy as np 
@@ -32,6 +32,8 @@ parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
 parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
                     dest='minsegmentlength',
                     help='Minimum size (in Mb) for segment to be included in analysis') 
+parser.add_argument('--seed', type=int, action='store', default='None',
+                    help='Seed value for random number generator')
 args = parser.parse_args()
 
 def shares_py(inds, shared, nmark):
@@ -54,6 +56,9 @@ except:
     
 def numpairs(n):
     return n * (n-1) * 0.5
+
+if args.seed:
+    random.seed(args.seed)
 
 print 'Minimum segment length: %sMb' % (args.minsegmentlength / float(10**6))
 print 'Minimum marker density: %s markers/Mb' % (args.markerdensitylimit *  float(10**6))
@@ -127,7 +132,7 @@ print 'Using %s processes' % args.njobs
 def nsharehelper(x):
     if x % 1000 == 0:
         print 'Random draw %s' % x 
-    return shares(sample(fullinds, naff), shared, nmark)
+    return shares(random.sample(fullinds, naff), shared, nmark)
 
 if args.njobs > 1:
     pool = Pool(processes=args.njobs)
