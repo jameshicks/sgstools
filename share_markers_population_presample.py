@@ -10,21 +10,32 @@ import numpy as np
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--match', metavar='FILE', required=True, dest='matchfile',
+
+group = parser.add_argument_group('Files')
+group.add_argument('--match', metavar='FILE', required=True, dest='matchfile',
                     help='GERMLINE match file')
-parser.add_argument('--map', metavar='FILE', required=True, dest='mapfile',
+group.add_argument('--map', metavar='FILE', required=True, dest='mapfile',
                     help='PLINK format map file')
-parser.add_argument('-o', '--out', metavar='FILE', required=True, dest='outfile',
+group.add_argument('-o', '--out', metavar='FILE', required=True, dest='outfile',
                     help='Output file')
-parser.add_argument('--affecteds', metavar='FILE', required=True, dest='afffile',
+group.add_argument('--affecteds', metavar='FILE', required=True, dest='afffile',
                     help='File with list of affecteds')
-parser.add_argument('--population', metavar='FILE', required=True, dest='popfile',
+group.add_argument('--population', metavar='FILE', required=True, dest='popfile',
                     help='File with list of population individuals')
-parser.add_argument('-j','--nproc', metavar='n', default=1, action='store', type=int,
+parser.add_argument('--kinship', default=None, help='Optional kinship file for matching')
+
+group = parser.add_argument('Options for resampling based p-values')
+parser.add_argument('--matchkinship', action='store_true', default=False,
+                    help = 'Match for mean kinship when drawing null population samples')
+group.add_argument('-j','--nproc', metavar='n', default=1, action='store', type=int,
                     help='Parallelize P value computation by spreading across'
                     'n processes', dest='njobs')
-parser.add_argument('--nrep', default=10**5, type=int, metavar='n', dest='nrep',
+group.add_argument('--nrep', default=10**5, type=int, metavar='n', dest='nrep',
                     help='Number of replications for emperical p-values')
+group.add_argument('--seed', type=int, action='store', default=0,
+                    help='Seed value for random number generator')
+
+group = parser.add_argument('QC for shared segments')
 parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
                     dest='markerdensitylimit', type=float,
                     help='Minimum number of markers per basepair to include'
@@ -32,11 +43,8 @@ parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
 parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
                     dest='minsegmentlength',
                     help='Minimum size (in Mb) for segment to be included in analysis') 
-parser.add_argument('--seed', type=int, action='store', default=0,
-                    help='Seed value for random number generator')
-parser.add_argument('--kinship', default=None, help='Optional kinship file for matching')
-parser.add_argument('--matchkinship', action='store_true', default=False,
-                    help = 'Match for mean kinship when drawing null population samples')
+
+
 args = parser.parse_args()
 
 
