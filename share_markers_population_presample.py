@@ -164,18 +164,6 @@ if args.kinship and args.matchkinship:
             else:
                 kinship[frozenset({ida, ibd})] = float(phi)
 
-
-for dtype in ['u1','u2','u4','u8']:
-    datatype = dtype
-    if numpairs(naff) < np.iinfo(datatype).max:
-        break
-else:
-    print 'More affected pairs than can fit into datatype %s' % datatype
-    print 'Number of affected pairs: %s' % numpairs(naff)
-    print 'Max possible with datatype %s: %s' % (datatype,
-                                                 np.iinfo(datatype).max)
-    exit(1)
-
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds, shared, nmark)
 
