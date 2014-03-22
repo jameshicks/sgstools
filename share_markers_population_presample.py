@@ -22,11 +22,11 @@ group.add_argument('--affecteds', metavar='FILE', required=True, dest='afffile',
                     help='File with list of affecteds')
 group.add_argument('--population', metavar='FILE', required=True, dest='popfile',
                     help='File with list of population individuals')
-parser.add_argument('--kinship', default=None, help='Optional kinship file for matching')
+group.add_argument('--kinship', default=None, help='Optional kinship file for matching')
 
-group = parser.add_argument('Options for resampling based p-values')
-parser.add_argument('--matchkinship', action='store_true', default=False,
-                    help = 'Match for mean kinship when drawing null population samples')
+group = parser.add_argument_group('Options for resampling based p-values')
+group.add_argument('--matchkinship', action='store_true', default=False,
+                   help='Match for mean kinship when drawing null population samples')
 group.add_argument('-j','--nproc', metavar='n', default=1, action='store', type=int,
                     help='Parallelize P value computation by spreading across'
                     'n processes', dest='njobs')
@@ -35,12 +35,12 @@ group.add_argument('--nrep', default=10**5, type=int, metavar='n', dest='nrep',
 group.add_argument('--seed', type=int, action='store', default=0,
                     help='Seed value for random number generator')
 
-group = parser.add_argument('QC for shared segments')
-parser.add_argument('--density', default=(100 / float(10**6)), metavar='d',
+group = parser.add_argument_group('QC for shared segments')
+group.add_argument('--density', default=(100 / float(10**6)), metavar='d',
                     dest='markerdensitylimit', type=float,
                     help='Minimum number of markers per basepair to include'
                     'segment in analysis, default 100 markers/Mb')
-parser.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
+group.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l',
                     dest='minsegmentlength',
                     help='Minimum size (in Mb) for segment to be included in analysis') 
 
