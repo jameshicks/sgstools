@@ -122,7 +122,7 @@ if naff == 0:
     exit(1)
 
 if affinds - fullinds:
-    print "Some individuals in the affected list weren't in the population list"
+    print "%d individuals in the affected list weren't in the population list" % len(affinds - fullinds)
     print "These individuals were removed"
     affinds = affinds & fullinds
 
