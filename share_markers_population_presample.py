@@ -149,7 +149,6 @@ with open(args.matchfile) as sharef:
         if pair not in shared:
             shared[pair] = []
         shared[pair].append((istart, istop))
-    keyset = frozenset(shared.keys())
 
 kinship = {}
 if args.kinship and args.matchkinship:
