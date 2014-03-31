@@ -44,6 +44,13 @@ group.add_argument('--minsegment', default=(.5 * 10**6), type=float, metavar='l'
                     dest='minsegmentlength',
                     help='Minimum size (in Mb) for segment to be included in analysis') 
 
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument('--sbool', help="Boolean scoring statistic. 1 if individuals"
+                   "are IBD>0, else 0", dest='model', action='store_const',
+                   const='sbool')
+group.add_argument('--spairs', help='Spairs scoring statistic. Requires output'
+                   'from `germline --haploid`', dest='model',
+                   action='store_const', const='Spairs')
 
 args = parser.parse_args()
 
@@ -62,7 +69,7 @@ def shares_py(inds, shared, nmark):
     return s / tmaxshares
 
 try:
-    from pydigree.sgs import proportion_shares as shares
+    from pydigree.sgs import nshares as shares
 except:
     print "Could not find module 'pydigree', using slower pure python implementation"
     shares = shares_py
@@ -126,7 +133,12 @@ if affinds - fullinds:
     print "These individuals were removed"
     affinds = affinds & fullinds
 
+
 print 'Reading Share file'
+
+def haplocheck(a):
+    return a.endswith('.0') or a.endswith('.1')
+
 with open(args.matchfile) as sharef:
     shared = {}
     for i,line in enumerate(sharef):
@@ -135,6 +147,20 @@ with open(args.matchfile) as sharef:
         l = line.strip().split()
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
+
+        if not haplocheck(ind1) and haplocheck(ind2):
+            print 'Spairs option requires output from `germline --haploid`'
+            print 'This file (%s) is not formatted properly.' % args.matchfile
+            exit(1)
+
+        # Germline haploid output gives which haplotype is shared.
+        # If we're just counting up (like we would for spairs) we
+        # can just lop off the haplotype identifiers, and the algorithm
+        # will just add another 1 when it comes over an overlapping region
+        if args.model == 'Spairs':
+            ind1 = ind1[:-2]
+            ind2 = ind2[:-2]
+
         markersinshare = int(l[9])
         pair = frozenset([ind1,ind2])
         start,stop = [int(x) for x in l[5:7]]
@@ -166,7 +192,7 @@ if args.kinship and args.matchkinship:
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds, shared, nmark)
 
-
+print 'Model: %s' % args.model
 print 'Calculating emperical p-values from %s draws of %s individuals' % (args.nrep, naff)
 print 'Using %s processes' % args.njobs
 
@@ -192,7 +218,7 @@ print
 print 'Writing output'
 
 with open(args.outfile,'w') as f:
-    f.write(','.join(['chr','snp','cm','pos','pctshares', 'p']) + '\n')
+    f.write(','.join(['chr','snp','cm','pos', args.model, 'p']) + '\n')
     for m,a,p in izip(gmap, affshare, pvals):
         chr,snp,cm,pos = m
         f.write(','.join(str(x) for x in [chr,snp,cm,pos,a,p]))
