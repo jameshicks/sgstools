@@ -1,0 +1,17 @@
+# Results
+*.csv
+deleteme
+*.out
+
+# Python intermediate files
+*.py[cod]
+
+# In place sed output
+*.pye
+
+# Emacs
+[#]*[#]
+*~
+
+# Profiling output
+*.lprof
