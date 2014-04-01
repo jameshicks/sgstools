@@ -136,8 +136,9 @@ if affinds - fullinds:
 
 print 'Reading Share file'
 
-def haplocheck(a):
-    return a.endswith('.0') or a.endswith('.1')
+def haplocheck(a,b):
+    return a.endswith('.0') or a.endswith('.1') and \
+           b.endswith('.0') or b.endswith('.1')
 
 with open(args.matchfile) as sharef:
     shared = {}
@@ -148,7 +149,7 @@ with open(args.matchfile) as sharef:
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
 
-        if not haplocheck(ind1) and haplocheck(ind2):
+        if args.model == 'Spairs' and not haplocheck(ind1, ind2):
             print 'Spairs option requires output from `germline --haploid`'
             print 'This file (%s) is not formatted properly.' % args.matchfile
             exit(1)
