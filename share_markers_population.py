@@ -60,7 +60,7 @@ args = parser.parse_args()
 def shares_py(inds, shared, nmark):
     ninds = len(inds)
     tmaxshares = numpairs(ninds)
-    s = np.zeros(nmark, dtype=datatype)
+    s = np.zeros(nmark, dtype='uint16')
     for pair in combinations(inds,2):
         try:
             for start, stop in shared[frozenset(pair)]:
@@ -191,7 +191,7 @@ if args.kinship and args.matchkinship:
             if not {ida, idb} <= fullinds:
                 continue
             else:
-                kinship[frozenset({ida, ibd})] = float(phi)
+                kinship[frozenset({ida, idb})] = float(phi)
 
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds, shared, nmark)
