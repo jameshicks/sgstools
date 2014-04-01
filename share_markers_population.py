@@ -51,7 +51,8 @@ group.add_argument('--sbool', help="Boolean scoring statistic. 1 if individuals"
 group.add_argument('--spairs', help='Spairs scoring statistic. Requires output'
                    'from `germline --haploid`', dest='model',
                    action='store_const', const='Spairs')
-
+parser.add_argument('--purepy', help=argparse.SUPPRESS,
+                    action='store_true', default=False)
 args = parser.parse_args()
 
 
@@ -74,6 +75,8 @@ except:
     print "Could not find module 'pydigree', using slower pure python implementation"
     shares = shares_py
 
+if args.purepy:
+    shares = shares_py
 
 ### Kinship functions for matching
 
