@@ -71,7 +71,7 @@ def shares_py(inds, shared, nmark):
 
 try:
     from pydigree.sgs import nshares as shares
-except:
+except ImportError:
     print "Could not find module 'pydigree', using slower pure python implementation"
     shares = shares_py
 
