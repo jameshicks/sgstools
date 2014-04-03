@@ -81,10 +81,8 @@ if args.purepy:
 ### Kinship functions for matching
 
 def get_kinship(a,b):
-    try:
-        return kinship[frozenset({a,b})]
-    except KeyError:
-        return 0.0
+    return kinship[frozenset({a,b})]
+
 
 def mean_kinship(inds):
     ninds  = len(inds)
@@ -192,6 +190,10 @@ if args.kinship and args.matchkinship:
                 continue
             else:
                 kinship[frozenset({ida, idb})] = float(phi)
+    for a,b in combinations(fullinds, 2):
+        pair = frozenset({a,b})
+        if pair not in kinship:
+            kinship[pair] = 0
 
 print 'Calculating sharing from affecteds'
 affshare = shares(affinds, shared, nmark)
