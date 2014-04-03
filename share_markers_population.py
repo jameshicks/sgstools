@@ -186,8 +186,8 @@ if args.kinship and args.matchkinship:
     with open(args.kinship) as kinshf:
         for line in kinshf:
             fam, ida, idb, phi = line.strip().split()
-            ida = (fam, ida)
-            idb = (fam, idb)
+            ida = '.'.join((fam, ida))
+            idb = '.'.join((fam, idb))
             if not {ida, idb} <= fullinds:
                 continue
             else:
