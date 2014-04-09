@@ -51,6 +51,9 @@ group.add_argument('--sbool', help="Boolean scoring statistic. 1 if individuals"
 group.add_argument('--spairs', help='Spairs scoring statistic. Requires output'
                    'from `germline --haploid`', dest='model',
                    action='store_const', const='Spairs')
+group.add_argument('--recessive', help='Recessive model. All pairs must be IBD=2.'
+                   'Requires output from `germline --haploid`', dest='model',
+                   action='store_const', const='Srec') 
 parser.add_argument('--purepy', help=argparse.SUPPRESS,
                     action='store_true', default=False)
 args = parser.parse_args()
@@ -83,7 +86,6 @@ if args.purepy:
 def get_kinship(a,b):
     return kinship[frozenset({a,b})]
 
-
 def mean_kinship(inds):
     ninds  = len(inds)
     return sum(get_kinship(a,b) for a,b in combinations(inds,2)) / (ninds * (ninds-1) * 0.5)
@@ -102,6 +104,28 @@ def match_kinship_sample(affs, population, threshold=0.001):
 def numpairs(n):
     return n * (n-1) * 0.5
 
+### Functions for inheritance modelling
+def runs(sequence, predicate, minlength=2):
+    """
+    Identifies runs of values for which predicate(value) evaluates True
+    and returns a 2-tuple of the start and end (inclusive) indices
+    """
+    inrun = False
+    for i,v in enumerate(sequence):
+        if not inrun and predicate(v):
+            inrun = True
+            start = i
+        elif inrun and not predicate(v):
+            inrun = False
+            stop = i - 1
+            if stop - start >= minlength:
+                yield start, stop
+
+    if predicate(v) and inrun:
+        stop = i
+        if stop - start >= minlength:
+            yield start, stop
+
 if args.seed:
     random.seed(args.seed)
 if args.matchkinship  and not args.kinship:
@@ -113,10 +137,10 @@ print 'Minimum marker density: %s markers/Mb' % (args.markerdensitylimit *  floa
 
 print 'Reading individual lists'
 with open(args.afffile) as f:
-    affinds = set('.'.join(x.strip().split()) for x in f)
+    affinds = set(tuple(x.strip().split()) for x in f)
     naff = len(affinds)
 with open(args.popfile) as f:
-    fullinds = set('.'.join(x.strip().split()) for x in f)
+    fullinds = set(tuple(x.strip().split()) for x in f)
 
 print 'Reading map'
 with open(args.mapfile) as f:
@@ -141,51 +165,88 @@ def haplocheck(a,b):
     return a.endswith('.0') or a.endswith('.1') and \
            b.endswith('.0') or b.endswith('.1')
 
-with open(args.matchfile) as sharef:
-    shared = {}
-    for i,line in enumerate(sharef):
-        if i % 100000 == 0:
-            print 'reading line %s' % i
+def read_germline():
+    with open(args.matchfile) as sharef:
+        shared = {}
+        
+        # Test the first line to see if we're in a haploid file
+        line = sharef.readline()
         l = line.strip().split()
         ind1 = '.'.join(l[0:2])
         ind2 = '.'.join(l[2:4])
+        haploid = haplocheck(ind1, ind2)
 
-        if args.model == 'Spairs' and not haplocheck(ind1, ind2):
+        if args.model == 'Spairs' and not haploid:
             print 'Spairs option requires output from `germline --haploid`'
             print 'This file (%s) is not formatted properly.' % args.matchfile
             exit(1)
 
-        # Germline haploid output gives which haplotype is shared.
-        # If we're just counting up (like we would for spairs) we
-        # can just lop off the haplotype identifiers, and the algorithm
-        # will just add another 1 when it comes over an overlapping region
-        if args.model == 'Spairs':
-            ind1 = ind1[:-2]
-            ind2 = ind2[:-2]
+        sharef.seek(0)
+            
+        for i,line in enumerate(sharef):
+            if i % 100000 == 0:
+                print 'reading line %s' % i
+            l = line.strip().split()
 
-        markersinshare = int(l[9])
-        pair = frozenset([ind1,ind2])
-        start,stop = [int(x) for x in l[5:7]]
-        istart,istop = [posd[int(x)] for x in l[5:7]]
+            # Germline haploid output gives which haplotype is shared.
+            # If we're just counting up (like we would for spairs) we
+            # can just lop off the haplotype identifiers, and the algorithm
+            # will just add another 1 when it comes over an overlapping region
+            if haploid:
+                l[1] = l[1][:-2]
+                l[3] = l[3][:-2]
 
-        if (stop - start) < args.minsegmentlength:
-            continue
 
-        if (markersinshare / float(stop - start)) < args.markerdensitylimit:
-            continue
-        
-        if pair not in shared:
-            shared[pair] = []
-        shared[pair].append((istart, istop))
+            ind1 = tuple(l[0:2])
+            ind2 = tuple(l[2:4])
+            
+            pair = frozenset({ind1,ind2})
 
+            start = int(l[5])
+            stop = int(l[6])
+
+            istart = posd[start]
+            istop = posd[stop]
+            markersinshare = istop - start
+            
+            if (stop - start) < args.minsegmentlength:
+                continue
+
+            if (markersinshare / float(stop - start)) < args.markerdensitylimit:
+                continue
+
+            if pair not in shared:
+                shared[pair] = []
+            shared[pair].append((istart, istop))
+    return shared
+
+shared = read_germline()
+
+print 'Preparing inheritance model'
+for pair in shared:
+
+    if args.model == 'Spairs':
+        continue
+
+    s = np.zeros(nmark)
+    for start, stop in shared[pair]:
+        s[start:(stop+1)] += 1
+
+    if args.model in {'Sbool', 'Sdom'}:
+        pred = lambda x: x > 0
+    elif args.model == 'Srec':
+        pred = lambda x: x == 2
+
+    shared[pair] = [x for x in runs(s, predicate)]
+    
 kinship = {}
 if args.kinship and args.matchkinship:
     print 'Reading kinship'
     with open(args.kinship) as kinshf:
         for line in kinshf:
             fam, ida, idb, phi = line.strip().split()
-            ida = '.'.join((fam, ida))
-            idb = '.'.join((fam, idb))
+            ida = tuple(fam, ida)
+            idb = tuple(fam, idb)
             if not {ida, idb} <= fullinds:
                 continue
             else:
