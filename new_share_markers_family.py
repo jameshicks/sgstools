@@ -3,11 +3,15 @@
 import sys
 import itertools
 
+from math import factorial
+
 import pandas as pd
 import numpy as np
 
-from pydigree.sgs import nshares as shares
+from scipy.stats import chi2
 
+from pydigree.sgs import nshares as shares
+from pydigree.io import read_ped
 
 matchf,mapf, affectedf, ndf = sys.argv[1:]
 
@@ -15,26 +19,42 @@ matchf,mapf, affectedf, ndf = sys.argv[1:]
 #    less = sum(x <= value for x in dist)
 #    return len(less) / float(len(dist))
 
-def ecdf(v, d):
+def npairs(i):
+    return len(i) * (len(i) - 1) / 2
+def pvals(v, d):
     vvals = set(v)
     vd = {}
     for val in vvals:
-        vd[val] = len([x for x in d if x < val])
+        vd[val] = (d >= val).sum() / float(d.shape[0])
     e = [vd[val] for val in v]
-    return np.array(e) / float(d.shape[0])
-    #return (v < d).sum() / float(d.shape[0])
+    return np.array(e) 
+
 
 print 'Reading null distribution'
 with open(ndf) as f:
     nulldist = {}
     for line in f:
-        fam, vals = line.strip().split(None,1)
-        vals = [float(x) for x in vals.split()]
-        nulldist[fam] = np.array([x for x in vals])
+        l = line.strip().split()
+        fam = l[0]
+        values = np.array([float(x) for x in l[1:]])
+        nulldist[fam] = values
 
-with open(affectedf) as f:
-    affecteds = { tuple(x.strip().split()) for x in f }
-    fams = {x[0] for x in affecteds}
+#with open(affectedf) as f:
+#    affecteds = { tuple(x.strip().split()) for x in f }
+#    fams = {x[0] for x in affecteds}
+peds = read_ped(affectedf)
+affecteds = {x for x in peds.individuals() if x.phenotypes['affected']}
+print '{} affected individuals'.format(len(affecteds))
+for a in affecteds.copy():
+    if a.is_marryin_founder():
+        print 'Removed affected marry-in founder %s' % a
+        affecteds.remove(a)
+
+affecteds = {(x.population.label, x.id) for x in affecteds}
+print '{} affecteds after removing marry-in founders'.format(len(affecteds))
+fams = {x[0] for x in affecteds}
+
+
 
 print 'Reading map'
 with open(mapf) as f:
@@ -55,10 +75,10 @@ def read_germline():
         shared = {}
         
         # Test the first line to see if we're in a haploid file
-        line = sharef.readline()
-        l = line.strip().split()
-        ind1 = '.'.join(l[0:2])
-        ind2 = '.'.join(l[2:4])
+#        line = sharef.readline()
+#        l = line.strip().split()
+#        ind1 = '.'.join(l[0:2])
+#        ind2 = '.'.join(l[2:4])
 #        haploid = haplocheck(ind1, ind2)
 
 #        if args.model == 'Spairs' and not haploid:
@@ -85,6 +105,8 @@ def read_germline():
             ind1 = tuple(l[0:2])
             ind2 = tuple(l[2:4])
             
+            if ind1[0] != ind2[0]:
+                continue
             pair = frozenset({ind1,ind2})
 
             start = int(l[5])
@@ -92,13 +114,16 @@ def read_germline():
 
             istart = posd[start]
             istop = posd[stop]
-            markersinshare = istop - start
+            markersinshare = istop - istart
+            #import pdb; pdb.set_trace()
+            #print start, stop, istart, istop, markersinshare
 
             minsegmentlength = (.5 * 10**6)
             if (stop - start) < minsegmentlength:
                 continue
             
             markerdensitylimit = (100 / float(10**6))
+            #print markersinshare, markersinshare / float(stop - start)
             if (markersinshare / float(stop - start)) < markerdensitylimit:
                 continue
 
@@ -108,32 +133,51 @@ def read_germline():
     return shared
 
 shared = read_germline()
-
+#import pdb; pdb.set_trace()
 
 #gmap = pd.read_table(mapfile, sep='\t', names=['chr','snp','cm','pos'])
 #nmark = gmap.pos.shape[0]
 
 
-pvals = {}
+pvalues = {}
 sharestats = {}
 
 #from pydigree.io.fastio import fast_ecdf as ecdf
 
 for fam in fams:
     if fam not in nulldist:
-        print 'No null distribution for pedigree {}, skipping...'.format(fam)
+        #print 'No null distribution for pedigree {}, skipping...'.format(fam)
         continue
-    else:
-        print 'Calculating pedigree {}'.format(fam)
     affs_in_fam = [x for x in affecteds if x[0] == fam]
-    s = shares(affs_in_fam, shared, nmark)
-    p = 1 - np.array(ecdf(s, nulldist[fam]))
+    print 'Calculating pedigree {} ({} affecteds)... '.format(fam, len(affs_in_fam)),
+    s = shares(affs_in_fam, shared, nmark) / float(npairs(affs_in_fam))
+    p = pvals(s, nulldist[fam])
+    print 'Maximum sharing: {} (p={})'.format(s.max(),p.min())
+    #import pdb; pdb.set_trace()
     sharestats[fam] = s
-    pvals[fam] = p
+    pvalues[fam] = p
+
+print 'Combining p-values by Fisher\'s method'
+def fisher(pvector):
+    k = pvector.shape[0]
+    chisq = -2 * (np.log(pvector)).sum()
+    return 1 - chi2.cdf(chisq, 2*k)
+o = pd.DataFrame()
+for fam in pvalues.keys():
+    o['p_fam{}'.format(fam)] = pvalues[fam]
+p_meta = o.apply(fisher,axis=1)
+
 
 if True:
     o = pd.DataFrame()
     o['pos'] = positions
-    for fam in pvals.keys():
-        o['p_fam{}'.format(fam)] = pvals[fam]
+    o['p_meta'] = p_meta
+    for fam in pvalues.keys():
+        o['p_fam{}'.format(fam)] = pvalues[fam]
     o.to_csv('output.pvals', index=False)
+if True:
+    o = pd.DataFrame()
+    o['pos'] = positions
+    for fam in sharestats.keys():
+        o['s_fam{}'.format(fam)] = sharestats[fam]
+    o.to_csv('output.scores', index=False)
