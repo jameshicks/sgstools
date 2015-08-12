@@ -22,11 +22,15 @@ args = parser.parse_args()
 def read_map(filename):
 	pass
 
-# TODO: Read pedigree data
+# Read pedigree data
+peds = pydigree.io.read_ped(args.ped)
 # TODO: Read genotype map data
-# TODO: Read phenotype data
+
+# Read phenotype data
+pydigree.io.read_phenotypes(peds, args.phen)
 # TODO: Get valid individuals from phenotypes
-analysis_individuals = None
+analysis_individuals = [x for x in peds.individuals if args.outcome in x.phenotypes]
+
 # TODO: Read SGS data
 
 print 'Fitting polygenic model'
@@ -53,7 +57,8 @@ for x in xrange(evaluation_sites):
 	ibd_model.maximize()
 	llik_ibd = ibd_mode.restricted_loglikelihood()
 
-	lod = llik_ibd - llik_null
-	print '\t'.join([chrom, pos, lod])
+	likelihood_ratio = -2*(llik_ibd - llik_null) 
+	lod = likelihood_ratio / 4.6
+	print '\t'.join([chrom, pos, likelihood_ratio, lod])
 
 
