@@ -1,5 +1,9 @@
 import argparse
 
+from bisect import bisect_left
+
+import pydigree
+
 from pydigree.mixedmodel import MixedModel
 from pydigree.sgs import ibd_matrix
 
@@ -35,6 +39,8 @@ print 'Done'
 
 
 # TODO: Find evaluation sites
+def find_site(target, values):
+	pass
 
 for x in xrange(evaluation_sites):
 	# TODO: Find evaluation site's locus 
@@ -48,5 +54,6 @@ for x in xrange(evaluation_sites):
 	llik_ibd = ibd_mode.restricted_loglikelihood()
 
 	lod = llik_ibd - llik_null
+	print '\t'.join([chrom, pos, lod])
 
 
