@@ -1,9 +1,11 @@
 import argparse
 
 from bisect import bisect_left
+from math import log, log10, e
 
 import pydigree
 
+from pydigree.common import log_base_change
 from pydigree.mixedmodel import MixedModel
 from pydigree.sgs import ibd_matrix
 
@@ -24,17 +26,21 @@ args = parser.parse_args()
 def read_map(filename):
     pass
 
+
 # Read pedigree data
 peds = pydigree.io.read_ped(args.ped)
 # TODO: Read genotype map data
 
 # Read phenotype data
 pydigree.io.read_phenotypes(peds, args.phen)
-# TODO: Get valid individuals from phenotypes
+
+# Get valid individuals from phenotypes
 analysis_individuals = [x for x in peds.individuals
 	if args.outcome in x.phenotypes]
 
 # TODO: Read SGS data
+sgs = pydigree.io.sgs.read_germline(args.sgs)
+sgs.update_segment_references(peds)
 
 print 'Fitting polygenic model'
 null_model = MixedModel(peds, outcome=args.outcome, fixefs=args.fixefs)
@@ -49,6 +55,7 @@ print 'Done'
 def find_site(target, values):
     pass
 
+
 def vc_linkage(null_model, locus):
 	# TODO: Find evaluation site's locus
     eval_site = None
@@ -61,10 +68,10 @@ def vc_linkage(null_model, locus):
     return ibd_model
 
 for x in xrange(evaluation_sites):
-    
+
 	ibd_model = vc_linkage(null_model, x)
     llik_ibd = ibd_model.restricted_loglikelihood()
 
-    likelihood_ratio = -2*(llik_ibd - llik_null)
-    lod = likelihood_ratio / 4.6
-    print '\t'.join([chrom, pos, likelihood_ratio, lod])
+    lod = (log_base_change(llik_ibd, e, 10) - log_base_change(llik_null, e, 10)
+    
+    print '\t'.join([chrom, pos, lod])
