@@ -1,4 +1,7 @@
 import argparse
+from itertools import combinations
+from math import factorial
+
 import pydigree as pyd
 from pydigree.sgs import sgs_population
 from pydigree.io.sgs import write_sgs
@@ -15,12 +18,15 @@ parser.add_argument('--seedsize', dest='seedsize', default=1000,
                     help='Seed size required for shared segment')
 args = parser.parse_args()
 
+print 'Reading data' 
 peds = pyd.io.plink.read_plink(prefix=args.plink)
+print 'Performing SGS analysis'
 
 analysis = sgs_population(peds,
                           onlywithin=args.onlywithin,
                           seed_size=args.seedsize,
                           min_length=args.minsize,
                           size_unit='mb')
-import ipdb; ipdb.set_trace()
+
+print 'Writing output to {}'.format(args.out)
 pyd.io.sgs.write_sgs(analysis, args.out)
