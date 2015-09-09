@@ -7,8 +7,10 @@ from pydigree.sgs import sgs_population
 from pydigree.io.sgs import write_sgs
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--plink', required=True,
-                    help='Prefix of plink formatted PED/MAP files')
+parser.add_argument('--ped', required=True, dest='plinkped',
+                    help='Prefix of plink formatted PED file')
+parser.add_argument('--map', required=True, dest='plinkmap',
+                    help='Prefix of plink formatted MAP file')
 parser.add_argument('--out', required=True, help='File name for outfit')
 parser.add_argument('--only-within-peds', action='store_true', dest='onlywithin',
                     help='Only perform SGS within pedigrees')
@@ -19,7 +21,7 @@ parser.add_argument('--seedsize', dest='seedsize', default=1000,
 args = parser.parse_args()
 
 print 'Reading data' 
-peds = pyd.io.plink.read_plink(prefix=args.plink)
+peds = pyd.io.plink.read_plink(pedfile=args.plinkped, mapfile=args.plinkmap)
 print 'Performing SGS analysis'
 
 analysis = sgs_population(peds,
