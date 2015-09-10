@@ -25,7 +25,8 @@ parser.add_argument('--every', default=0.5, type=float,
 parser.add_argument('--onlywithin', action='store_true')
 parser.add_argument('--sites', nargs='*', type=int, dest='evalsites')
 parser.add_argument('--method', default='FS', dest='maxmethod')
-parser.add_argument('--verbose', action='store_true', help='Show progress of maximizer')
+parser.add_argument(
+    '--verbose', action='store_true', help='Show progress of maximizer')
 args = parser.parse_args()
 
 
@@ -55,7 +56,6 @@ print 'Updating references'
 sgs.update_segment_references(peds)
 
 
-
 print 'Fitting polygenic model'
 null_model = MixedModel(peds, outcome=args.outcome, fixed_effects=args.fixefs)
 null_model.add_genetic_effect()
@@ -67,9 +67,11 @@ print 'Done'
 
 
 def vc_linkage(locus):
-    ibd_model = MixedModel(peds, outcome=args.outcome, fixed_effects=args.fixefs)
+    ibd_model = MixedModel(
+        peds, outcome=args.outcome, fixed_effects=args.fixefs)
     ibd_model.add_genetic_effect()
-    ibdmat = sgs.ibd_matrix(analysis_individuals, locus, location_type='index', onlywithin=args.onlywithin)
+    ibdmat = sgs.ibd_matrix(
+        analysis_individuals, locus, location_type='index', onlywithin=args.onlywithin)
 
     ranef = RandomEffect(analysis_individuals,
                          'IBD',
@@ -81,19 +83,21 @@ def vc_linkage(locus):
     ibd_model.maximize(verbose=args.verbose, method=args.maxmethod)
     return ibd_model
 
+
 class VCLResult(object):
+
     def __init__(self, alternative, null):
         self.llik_alt = alternative.loglikelihood()
         self.llik_null = null.loglikelihood()
 
     @property
     def chisq(self):
-        return -2.0 * self.llik_null + 2.0 * self.llik_alt 
-    
+        return -2.0 * self.llik_null + 2.0 * self.llik_alt
+
     @property
     def pvalue(self):
         return 1 - chi2.cdf(self.chisq, 1)
-    
+
     @property
     def lod(self):
         return self.chisq / (2.0 * log(10.0))
@@ -107,16 +111,19 @@ print '{:<10} {:<10} {:<10} {:<10} {:<10}'.format('CHROM',
 print '-' * 54
 for chromidx, chromosome in enumerate(peds.chromosomes):
     pstart, pstop = chromosome.physical_map[0], chromosome.physical_map[-1]
+
     if not args.evalsites:
         evaluation_sites = np.arange(pstart, pstop, args.every * 1e6)
     else:
         evaluation_sites = args.evalsites
+
     for evaluation_site in evaluation_sites:
         markidx = chromosome.closest_marker(evaluation_site)
         locus = chromidx, markidx
-        
+
         ibd_model = vc_linkage(locus)
         llik_ibd = ibd_model.loglikelihood()
+
         vc = VCLResult(ibd_model, null_model)
 
         h2 = ibd_model.variance_components[-2] / \
