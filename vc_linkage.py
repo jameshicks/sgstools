@@ -99,6 +99,12 @@ class VCLResult(object):
         return self.chisq / (2.0 * log(10.0))
 
 outputlist = []
+print '{:<10} {:<10} {:<10} {:<10} {:<10}'.format('CHROM',
+                                                  'BP',
+                                                  'H2',
+                                                  'LOD',
+                                                  'PVAL')
+print '-' * 54
 for chromidx, chromosome in enumerate(peds.chromosomes):
     pstart, pstop = chromosome.physical_map[0], chromosome.physical_map[-1]
     if not args.evalsites:
@@ -112,14 +118,19 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
         ibd_model = vc_linkage(locus)
         llik_ibd = ibd_model.loglikelihood()
         vc = VCLResult(ibd_model, null_model)
-        lod = (log_base_change(llik_ibd, e, 10) -
-               log_base_change(llik_null, e, 10))
-    
-       # lod = np.nan
-    
-        output = [chromosome.label, chromosome.physical_map[markidx], vc.lod, vc.pvalue]
+
+        h2 = ibd_model.variance_components[-2] / \
+            sum(ibd_model.variance_components)
+
+        h2 = h2 if h2 > 0 else 0.0
+
+        output = ['{:<10}'.format(chromosome.label),
+                  '{:<10}'.format(chromosome.physical_map[markidx]),
+                  '{:<10.2f}'.format(h2 * 100),
+                  '{:<10.3f}'.format(vc.lod),
+                  '{:<10.4g}'.format(vc.pvalue)]
         outputlist.append(output)
-        print '\t'.join(str(x) for x in output)
+        print ' '.join(str(x) for x in output)
 
 
 print 'Done!'
