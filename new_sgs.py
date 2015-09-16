@@ -18,13 +18,15 @@ parser.add_argument('--minsize', type=float, default=1.0,
                     help='Minimum size of segment (in megabases)')
 parser.add_argument('--seedsize', dest='seedsize', default=1000,
                     help='Seed size required for shared segment')
+parser.add_argument('--njobs', '-j', dest='njobs', type=int, default=1,
+                    help='Number of processes to use for parallel computation')
 args = parser.parse_args()
 
-print 'Reading data' 
+print 'Reading data'
 peds = pyd.io.plink.read_plink(pedfile=args.plinkped, mapfile=args.plinkmap)
 print 'Performing SGS analysis'
 
-analysis = sgs_population(peds,
+analysis = sgs_population(peds, njobs=args.njobs,
                           onlywithin=args.onlywithin,
                           seed_size=args.seedsize,
                           min_length=args.minsize,
