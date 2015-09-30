@@ -99,7 +99,7 @@ class VCLResult(object):
 
     @property
     def pvalue(self):
-        return 1 - chi2.cdf(self.chisq, 1)
+        return chi2.sf(self.chisq, 1)
 
     @property
     def lod(self):
