@@ -27,6 +27,8 @@ parser.add_argument('--sites', nargs='*', type=int, dest='evalsites')
 parser.add_argument('--method', default='FS', dest='maxmethod')
 parser.add_argument(
     '--verbose', action='store_true', help='Show progress of maximizer')
+parser.add_argument('--starts', nargs='*', type=float, default=None,
+    help='Starting values for the optimizer of the IBD model')
 parser.add_argument('--out')
 args = parser.parse_args()
 
@@ -83,7 +85,7 @@ def vc_linkage(locus):
     ibd_model.add_random_effect(ranef)
 
     ibd_model.fit_model()
-    ibd_model.maximize(verbose=args.verbose, method=args.maxmethod)
+    ibd_model.maximize(verbose=args.verbose, method=args.maxmethod, starts=args.starts)
     return ibd_model
 
 
