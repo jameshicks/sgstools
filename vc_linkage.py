@@ -28,7 +28,7 @@ parser.add_argument('--method', default='FS', dest='maxmethod')
 parser.add_argument(
     '--verbose', action='store_true', help='Show progress of maximizer')
 parser.add_argument('--starts', nargs='*', type=float, default=None,
-    help='Starting values for the optimizer of the IBD model')
+                    help='Starting values for the optimizer of the IBD model')
 parser.add_argument('--out')
 args = parser.parse_args()
 
@@ -85,7 +85,8 @@ def vc_linkage(locus):
     ibd_model.add_random_effect(ranef)
 
     ibd_model.fit_model()
-    ibd_model.maximize(verbose=args.verbose, method=args.maxmethod, starts=args.starts)
+    ibd_model.maximize(
+        verbose=args.verbose, method=args.maxmethod, starts=args.starts)
     return ibd_model
 
 
@@ -125,25 +126,28 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
     for evaluation_site in evaluation_sites:
         markidx = chromosome.closest_marker(evaluation_site)
         locus = chromidx, markidx
+        try:
+            ibd_model = vc_linkage(locus)
+            llik_ibd = ibd_model.loglikelihood()
 
-        ibd_model = vc_linkage(locus)
-        llik_ibd = ibd_model.loglikelihood()
+            vc = VCLResult(ibd_model, null_model)
+            h2 = ibd_model.variance_components[-2] / \
+                sum(ibd_model.variance_components)
 
-        vc = VCLResult(ibd_model, null_model)
-        #import ipdb; ipdb.set_trace()
-        h2 = ibd_model.variance_components[-2] / \
-            sum(ibd_model.variance_components)
+            h2 = h2 if h2 > 0 else 0.0
 
-        h2 = h2 if h2 > 0 else 0.0
-
-        output = ['{:<10}'.format(chromosome.label),
-                  '{:<10}'.format(chromosome.physical_map[markidx]),
-                  '{:<10.2f}'.format(h2 * 100),
-                  '{:<10.3f}'.format(vc.lod),
-                  '{:<10.4g}'.format(vc.pvalue)]
-        outputlist.append(output)
-        print ' '.join(str(x) for x in output)
-
+            output = ['{:<10}'.format(chromosome.label),
+                      '{:<10}'.format(chromosome.physical_map[markidx]),
+                      '{:<10.2f}'.format(h2 * 100),
+                      '{:<10.3f}'.format(vc.lod),
+                      '{:<10.4g}'.format(vc.pvalue)]
+            outputlist.append(output)
+            print ' '.join(str(x) for x in output)
+        except np.linalg.LinAlgError as e:
+            print 'Error fitting {}:{}: {}'.format(chromosome.label,
+                                                   chromosome.physical_map[
+                                                       markidx],
+                                                   str(e))
 if args.out is not None:
     print 'Writing output to {}'.format(args.out)
     with open(args.out, 'w') as f:
