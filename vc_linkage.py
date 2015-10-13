@@ -19,7 +19,7 @@ parser.add_argument('--map')
 parser.add_argument('--phen')
 parser.add_argument('--sgs')
 parser.add_argument('--outcome', required=True)
-parser.add_argument('--fixefs')
+parser.add_argument('--fixefs', nargs='*')
 parser.add_argument('--every', default=0.5, type=float,
                     help='Distance between evaluations (in Mb)')
 parser.add_argument('--onlywithin', action='store_true')
