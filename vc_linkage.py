@@ -69,11 +69,18 @@ null_model.summary()
 llik_null = null_model.loglikelihood()
 print 'Done'
 
+analysis_individuals = null_model.observations()
+
+
 
 def vc_linkage(locus):
     ibd_model = MixedModel(
         peds, outcome=args.outcome, fixed_effects=args.fixefs)
-    ibd_model.add_genetic_effect()
+    add_relat_mat = null_model.covariance_matrices[0]
+    additive = RandomEffect(analysis_individuals,
+                            'additive',
+                            incidence_matrix='eye',
+                            covariance_matrix=add_relat_mat)
     ibdmat = sgs.ibd_matrix(analysis_individuals,
                             locus,
                             location_type='index',
@@ -83,6 +90,7 @@ def vc_linkage(locus):
                          'IBD',
                          incidence_matrix='eye',
                          covariance_matrix=ibdmat)
+    ibd_model.add_random_effect(additive)
     ibd_model.add_random_effect(ranef)
 
     ibd_model.fit_model()
