@@ -124,6 +124,8 @@ print '{:<10} {:<10} {:<10} {:<10} {:<10}'.format('CHROM',
                                                   'LOD',
                                                   'PVAL')
 print '-' * 64
+
+evaluated_sites = set()
 for chromidx, chromosome in enumerate(peds.chromosomes):
     pstart, pstop = chromosome.physical_map[0], chromosome.physical_map[-1]
 
@@ -135,6 +137,10 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
     for evaluation_site in evaluation_sites:
         markidx = chromosome.closest_marker(evaluation_site)
         locus = chromidx, markidx
+
+        if locus in evaluated_sites:
+            continue
+
         try:
             ibd_model = vc_linkage(locus)
             llik_ibd = ibd_model.loglikelihood()
@@ -160,6 +166,8 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
                                                    str(e))
         if args.interact:
           import IPython; IPython.embed()
+
+        evaluated_sites.add(locus)
 
 if args.out is not None:
     print 'Writing output to {}'.format(args.out)
