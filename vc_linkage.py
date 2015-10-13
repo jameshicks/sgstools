@@ -29,6 +29,7 @@ parser.add_argument(
     '--verbose', action='store_true', help='Show progress of maximizer')
 parser.add_argument('--starts', nargs='*', type=float, default=None,
                     help='Starting values for the optimizer of the IBD model')
+parser.add_argument('--interact', action='store_true')
 parser.add_argument('--out')
 args = parser.parse_args()
 
@@ -143,11 +144,15 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
                       '{:<10.4g}'.format(vc.pvalue)]
             outputlist.append(output)
             print ' '.join(str(x) for x in output)
+
         except np.linalg.LinAlgError as e:
             print 'Error fitting {}:{}: {}'.format(chromosome.label,
                                                    chromosome.physical_map[
                                                        markidx],
                                                    str(e))
+        if args.interact:
+          import IPython; IPython.embed()
+
 if args.out is not None:
     print 'Writing output to {}'.format(args.out)
     with open(args.out, 'w') as f:
