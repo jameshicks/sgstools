@@ -30,6 +30,7 @@ parser.add_argument(
 parser.add_argument('--starts', nargs='*', type=float, default=None,
                     help='Starting values for the optimizer of the IBD model')
 parser.add_argument('--interact', action='store_true')
+parser.add_argument('--failhard', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--out')
 args = parser.parse_args()
 
@@ -70,7 +71,6 @@ llik_null = null_model.loglikelihood()
 print 'Done'
 
 analysis_individuals = null_model.observations()
-
 
 
 def vc_linkage(locus):
@@ -149,7 +149,6 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
             h2 = ibd_model.variance_components[-2] / \
                 sum(ibd_model.variance_components)
 
-            h2 = h2 if h2 > 0 else 0.0
 
             output = ['{:<10}'.format(chromosome.label),
                       '{:<10}'.format(chromosome.physical_map[markidx]),
@@ -164,8 +163,14 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
                                                    chromosome.physical_map[
                                                        markidx],
                                                    str(e))
+            if args.failhard:
+                raise
+            else:
+                pass
+
         if args.interact:
-          import IPython; IPython.embed()
+            import IPython
+            IPython.embed()
 
         evaluated_sites.add(locus)
 
