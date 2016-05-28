@@ -22,6 +22,7 @@ parser.add_argument('--outcome', required=True)
 parser.add_argument('--fixefs', nargs='*')
 parser.add_argument('--every', default=0.5, type=float,
                     help='Distance between evaluations (in Mb)')
+parser.add_argument('--range',  default=None)
 parser.add_argument('--onlywithin', action='store_true')
 parser.add_argument('--sites', nargs='*', type=int, dest='evalsites')
 parser.add_argument('--method', default='FS', dest='maxmethod')
@@ -125,9 +126,19 @@ print '{:<10} {:<10} {:<10} {:<10} {:<10}'.format('CHROM',
                                                   'PVAL')
 print '-' * 64
 
-evaluated_sites = set()
+
 for chromidx, chromosome in enumerate(peds.chromosomes):
-    pstart, pstop = chromosome.physical_map[0], chromosome.physical_map[-1]
+    evaluated_sites = set()
+
+    if args.range is None:
+        pstart, pstop = chromosome.physical_map[0], chromosome.physical_map[-1]
+    else:
+        pstart, pstop = [int(x) for x in args.range.split('-')]
+
+        if pstart < chromosome.physical_map[0]:
+            raise ValueError('Range start out of range for genotypes')
+        if pstop > chromosome.physical_map[-1]:
+            raise ValueError('Range stop out of range for genotypes')
 
     if not args.evalsites:
         evaluation_sites = np.arange(pstart, pstop, args.every * 1e6)
@@ -146,8 +157,8 @@ for chromidx, chromosome in enumerate(peds.chromosomes):
             llik_ibd = ibd_model.loglikelihood()
 
             vc = VCLResult(ibd_model, null_model)
-            h2 = ibd_model.variance_components[-2] / \
-                sum(ibd_model.variance_components)
+            h2 = (ibd_model.variance_components[-2] /
+                sum(ibd_model.variance_components))
 
 
             output = ['{:<10}'.format(chromosome.label),
